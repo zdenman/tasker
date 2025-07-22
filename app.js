@@ -475,17 +475,35 @@ function renderTasks(list) {
         ${task.date ? `<span class="task-time">${task.date}</span>` : ''}
         ${countdown ? `<span id="countdown-${timerId}" class="countdown-timer">${countdown}</span>` : ''}
         <div class="task-actions">
-          <svg class="icon edit" title="Edit Task" viewBox="0 0 24 24" fill="currentColor"
-               onclick="editTask('${list.id}', '${task.id}')">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-          </svg>
-          <svg class="icon bell" title="Set Reminder" viewBox="0 0 24 24" fill="currentColor" onclick="setReminder('${list.id}', '${task.id}')">
-            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-          </svg>
-          <svg class="icon trash" title="Delete Task" viewBox="0 0 24 24" fill="currentColor"
-               onclick="deleteTask('${list.id}', '${task.id}')">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
+          <div class="task-menu-container">
+            <button class="icon-btn task-menu" title="More options" data-task-id="${task.id}" data-list-id="${list.id}">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="1"/>
+                <circle cx="12" cy="5" r="1"/>
+                <circle cx="12" cy="19" r="1"/>
+              </svg>
+            </button>
+            <div class="task-menu-dropdown">
+              <button class="menu-item task-edit" title="Edit Task" data-task-id="${task.id}" data-list-id="${list.id}">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                Edit
+              </button>
+              <button class="menu-item task-reminder" title="Set Reminder" data-task-id="${task.id}" data-list-id="${list.id}">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                Reminder
+              </button>
+              <button class="menu-item task-delete" title="Delete Task" data-task-id="${task.id}" data-list-id="${list.id}">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       </li>
     `;
@@ -928,12 +946,71 @@ document.addEventListener('click', function(event) {
       }
     }
   }
+  
+  // Handle task menu toggle button
+  else if (target.classList.contains('task-menu')) {
+    event.stopPropagation();
+    const menuContainer = target.closest('.task-menu-container');
+    const isActive = menuContainer.classList.contains('active');
+    
+    // Close all other open menus (both list and task menus)
+    document.querySelectorAll('.list-menu-container.active, .task-menu-container.active').forEach(container => {
+      container.classList.remove('active');
+    });
+    
+    // Toggle current menu
+    if (!isActive) {
+      menuContainer.classList.add('active');
+    }
+  }
+  
+  // Handle task edit button
+  else if (target.classList.contains('task-edit')) {
+    const taskId = target.getAttribute('data-task-id');
+    const listId = target.getAttribute('data-list-id');
+    if (taskId && listId) {
+      editTask(listId, taskId);
+      // Close the menu
+      const menuContainer = target.closest('.task-menu-container');
+      if (menuContainer) {
+        menuContainer.classList.remove('active');
+      }
+    }
+  }
+  
+  // Handle task reminder button
+  else if (target.classList.contains('task-reminder')) {
+    const taskId = target.getAttribute('data-task-id');
+    const listId = target.getAttribute('data-list-id');
+    if (taskId && listId) {
+      setReminder(listId, taskId);
+      // Close the menu
+      const menuContainer = target.closest('.task-menu-container');
+      if (menuContainer) {
+        menuContainer.classList.remove('active');
+      }
+    }
+  }
+  
+  // Handle task delete button
+  else if (target.classList.contains('task-delete')) {
+    const taskId = target.getAttribute('data-task-id');
+    const listId = target.getAttribute('data-list-id');
+    if (taskId && listId) {
+      deleteTask(listId, taskId);
+      // Close the menu
+      const menuContainer = target.closest('.task-menu-container');
+      if (menuContainer) {
+        menuContainer.classList.remove('active');
+      }
+    }
+  }
 });
 
 // Close dropdown menus when clicking outside
 document.addEventListener('click', function(event) {
-  if (!event.target.closest('.list-menu-container')) {
-    document.querySelectorAll('.list-menu-container.active').forEach(container => {
+  if (!event.target.closest('.list-menu-container') && !event.target.closest('.task-menu-container')) {
+    document.querySelectorAll('.list-menu-container.active, .task-menu-container.active').forEach(container => {
       container.classList.remove('active');
     });
   }

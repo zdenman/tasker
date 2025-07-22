@@ -527,6 +527,46 @@ h1 {
   padding: 0;
 }
 
+/* Task menu dropdown styles */
+.task-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.task-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 140px;
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+}
+
+.task-menu-container.active .task-menu-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.task-menu-dropdown .menu-item.task-edit:hover {
+  color: var(--accent);
+}
+
+.task-menu-dropdown .menu-item.task-reminder:hover {
+  color: var(--warning);
+}
+
+.task-menu-dropdown .menu-item.task-delete:hover {
+  color: var(--danger);
+}
+
 /* Drag and drop styles */
 .list-card.dragging {
   opacity: 0.5;
