@@ -39,6 +39,70 @@ function toggleModalTimeInputs() {
   }
 }
 
+// Settings modal functions
+function showSettingsModal() {
+  document.getElementById('settingsModal').style.display = 'block';
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+// Export data function
+function exportData() {
+  const data = {
+    lists: lists,
+    exportDate: new Date().toISOString(),
+    version: '1.0'
+  };
+  
+  const dataStr = JSON.stringify(data, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = `tasker-backup-${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  
+  URL.revokeObjectURL(link.href);
+}
+
+// Import data function
+function importData() {
+  document.getElementById('importFileInput').click();
+}
+
+function handleFileImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      if (data.lists && Array.isArray(data.lists)) {
+        const confirmImport = confirm('This will replace all your current data. Are you sure you want to continue?');
+        
+        if (confirmImport) {
+          lists = data.lists;
+          saveLists();
+          renderLists();
+          closeSettingsModal();
+          alert('Data imported successfully!');
+        }
+      } else {
+        alert('Invalid file format. Please select a valid backup file.');
+      }
+    } catch (error) {
+      alert('Error reading file. Please make sure it\'s a valid JSON file.');
+    }
+  };
+  
+  reader.readAsText(file);
+  event.target.value = ''; // Reset file input
+}
+
 // View toggle function
 function toggleView() {
   isColumnView = !isColumnView;
