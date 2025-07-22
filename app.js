@@ -864,7 +864,22 @@ window.onclick = function(event) {
   if (event.target === editTaskModal) closeEditTaskModal();
 };
 
+// Theme management
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+}
+
 // Initialize
+initializeTheme();
 initializeView();
 renderLists();
 startCountdownUpdates();

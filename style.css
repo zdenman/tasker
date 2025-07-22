@@ -9,7 +9,28 @@
   --gap: 8px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
   --shadow-hover: 0 4px 16px rgba(0,0,0,0.15);
+  --card-bg: #fff;
+  --card-border: #eee;
+  --header-bg: #f8f9fa;
+  --text-muted: #666;
+  --text-secondary: #777;
   font: 16px/1.5 system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --fg: #e0e0e0;
+  --accent: #4a9eff;
+  --danger: #ff6b6b;
+  --warning: #ffd93d;
+  --success: #51cf66;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-hover: 0 4px 16px rgba(0,0,0,0.4);
+  --card-bg: #2d2d2d;
+  --card-border: #404040;
+  --header-bg: #333333;
+  --text-muted: #a0a0a0;
+  --text-secondary: #b0b0b0;
 }
 
 * {
@@ -85,6 +106,27 @@ h1 {
   box-shadow: var(--shadow-hover);
 }
 
+.theme-toggle-btn {
+  background: #666;
+  color: white;
+  border: 2px solid #666;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle-btn:hover {
+  background: #555;
+  border-color: #555;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
 .settings-btn {
   background: #666;
   color: white;
@@ -141,8 +183,8 @@ h1 {
 }
 
 .list-card {
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   transition: all 0.2s ease;
@@ -162,9 +204,9 @@ h1 {
 }
 
 .list-header {
-  background: #f8f9fa;
+  background: var(--header-bg);
   padding: calc(var(--gap) * 1.5);
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -177,12 +219,12 @@ h1 {
 }
 
 .list-date {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .list-description {
-  color: #777;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 4px;
   font-style: italic;
@@ -198,8 +240,8 @@ h1 {
   display: flex;
   gap: var(--gap);
   padding: calc(var(--gap) * 1.5);
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--card-border);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -208,9 +250,11 @@ h1 {
   flex: 1;
   min-width: 120px;
   padding: 8px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   font-size: 0.9rem;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .time-date-inputs {
@@ -229,8 +273,8 @@ h1 {
 
 .time-toggle-btn {
   padding: 8px;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
+  background: var(--header-bg);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -239,11 +283,12 @@ h1 {
   justify-content: center;
   min-width: 36px;
   height: 36px;
+  color: var(--fg);
 }
 
 .time-toggle-btn:hover {
-  background: #e0e0e0;
-  border-color: #ccc;
+  background: var(--card-bg);
+  border-color: var(--text-muted);
 }
 
 .time-toggle-btn.active {
@@ -288,17 +333,17 @@ h1 {
   align-items: center;
   gap: var(--gap);
   padding: calc(var(--gap) * 1.5);
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--card-border);
   transition: background 0.2s ease;
   flex-wrap: wrap;
 }
 
 .list-task-item:hover {
-  background: #f8f9fa;
+  background: var(--header-bg);
 }
 
 .list-task-item.done {
-  background: #f0f0f0;
+  background: var(--header-bg);
 }
 
 .list-task-item.done .task-text {
@@ -312,9 +357,9 @@ h1 {
 }
 
 .task-time {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
-  background: #f0f0f0;
+  background: var(--header-bg);
   padding: 2px 8px;
   border-radius: 12px;
 }
@@ -464,7 +509,7 @@ h1 {
 
 .empty-list {
   text-align: center;
-  color: #666;
+  color: var(--text-muted);
   padding: calc(var(--gap) * 3);
   font-style: italic;
 }
@@ -483,7 +528,7 @@ h1 {
 }
 
 .modal-content {
-  background-color: #fff;
+  background-color: var(--card-bg);
   margin: 15% auto;
   padding: 20px;
   border-radius: var(--radius);
@@ -505,7 +550,7 @@ h1 {
 }
 
 .close {
-  color: #aaa;
+  color: var(--text-muted);
   float: right;
   font-size: 28px;
   font-weight: bold;
@@ -514,7 +559,7 @@ h1 {
 }
 
 .close:hover {
-  color: #000;
+  color: var(--fg);
 }
 
 .modal-btn {
@@ -555,11 +600,13 @@ h1 {
 .modal form input,
 .modal form textarea {
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   font-size: 1rem;
   transition: border-color 0.2s ease;
   font-family: inherit;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .modal form input:focus,
@@ -607,9 +654,11 @@ h1 {
 
 .modal-time-inputs input {
   padding: 8px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   font-size: 0.9rem;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .modal-time-inputs input[type="time"] {
@@ -627,7 +676,7 @@ h1 {
 .settings-section h3 {
   margin: 0 0 15px 0;
   font-size: 1.2rem;
-  color: #333;
+  color: var(--fg);
 }
 
 .settings-buttons {
