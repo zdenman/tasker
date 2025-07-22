@@ -52,8 +52,12 @@ function closeSettingsModal() {
 function exportData() {
   const data = {
     lists: lists,
+    settings: {
+      theme: localStorage.getItem('theme') || 'light',
+      isColumnView: JSON.parse(localStorage.getItem('isColumnView')) || false
+    },
     exportDate: new Date().toISOString(),
-    version: '1.0'
+    version: '1.1'
   };
   
   const dataStr = JSON.stringify(data, null, 2);
@@ -65,6 +69,7 @@ function exportData() {
   link.click();
   
   URL.revokeObjectURL(link.href);
+  showToast('Data exported successfully!', 'success');
 }
 
 // Import data function
@@ -82,14 +87,58 @@ function handleFileImport(event) {
       const data = JSON.parse(e.target.result);
       
       if (data.lists && Array.isArray(data.lists)) {
-        const confirmImport = confirm('This will replace all your current data. Are you sure you want to continue?');
+        const confirmImport = confirm('This will replace all your current data and settings. Are you sure you want to continue?');
         
         if (confirmImport) {
+          // Import lists
           lists = data.lists;
           saveLists();
+          
+          // Import settings if available
+          if (data.settings) {
+            // Restore theme
+            if (data.settings.theme) {
+              localStorage.setItem('theme', data.settings.theme);
+              document.documentElement.setAttribute('data-theme', data.settings.theme);
+            }
+            
+            // Restore view preference
+            if (typeof data.settings.isColumnView !== 'undefined') {
+              isColumnView = data.settings.isColumnView;
+              localStorage.setItem('isColumnView', JSON.stringify(isColumnView));
+              
+              // Update UI immediately
+              const container = document.getElementById('listsContainer');
+              const toggleBtn = document.getElementById('viewToggleBtn');
+              
+              if (isColumnView) {
+                container.classList.add('column-view');
+                toggleBtn.title = 'Switch to row view';
+                toggleBtn.innerHTML = `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                `;
+              } else {
+                container.classList.remove('column-view');
+                toggleBtn.title = 'Switch to column view';
+                toggleBtn.innerHTML = `
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                  </svg>
+                `;
+              }
+            }
+          }
+          
           renderLists();
           closeSettingsModal();
-          showToast('Data imported successfully!', 'success');
+          showToast('Data and settings imported successfully!', 'success');
         }
       } else {
         showToast('Invalid file format. Please select a valid backup file.', 'error');
