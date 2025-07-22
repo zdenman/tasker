@@ -86,9 +86,9 @@ h1 {
 }
 
 .view-toggle-btn {
-  background: var(--accent);
-  color: white;
-  border: 2px solid var(--accent);
+  background: none;
+  color: var(--fg);
+  border: none;
   padding: 0.5rem;
   border-radius: var(--radius);
   cursor: pointer;
@@ -96,20 +96,17 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow);
 }
 
 .view-toggle-btn:hover {
-  background: #0052cc;
-  border-color: #0052cc;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  color: var(--accent);
+  transform: scale(1.1);
 }
 
 .theme-toggle-btn {
-  background: #666;
-  color: white;
-  border: 2px solid #666;
+  background: none;
+  color: var(--fg);
+  border: none;
   padding: 0.5rem;
   border-radius: var(--radius);
   cursor: pointer;
@@ -117,20 +114,17 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow);
 }
 
 .theme-toggle-btn:hover {
-  background: #555;
-  border-color: #555;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  color: var(--accent);
+  transform: scale(1.1);
 }
 
 .settings-btn {
-  background: #666;
-  color: white;
-  border: 2px solid #666;
+  background: none;
+  color: var(--fg);
+  border: none;
   padding: 0.5rem;
   border-radius: var(--radius);
   cursor: pointer;
@@ -138,14 +132,11 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow);
 }
 
 .settings-btn:hover {
-  background: #555;
-  border-color: #555;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  color: var(--accent);
+  transform: scale(1.1);
 }
 
 .lists-container {
