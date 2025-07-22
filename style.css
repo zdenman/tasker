@@ -376,13 +376,13 @@ h1 {
 }
 
 .icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   fill: var(--fg);
   transition: all 0.2s ease;
-  padding: 3px;
-  border-radius: 3px;
+  padding: 4px;
+  border-radius: 4px;
 }
 
 .icon:hover {
@@ -872,16 +872,63 @@ h1 {
     padding: var(--gap);
   }
   
+  header {
+    margin-bottom: calc(var(--gap) * 2);
+    gap: calc(var(--gap) * 0.5);
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .header-controls {
+    gap: 0.5rem;
+  }
+  
+  .view-toggle-btn,
+  .theme-toggle-btn,
+  .settings-btn {
+    padding: 0.4rem;
+  }
+  
+  .view-toggle-btn svg,
+  .theme-toggle-btn svg,
+  .settings-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .add-list-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+  
   .lists-container {
     grid-template-columns: 1fr;
   }
   
   .list-form {
-    flex-direction: column;
+    gap: 4px;
+    padding: calc(var(--gap) * 1);
   }
   
   .list-form input {
-    width: 100%;
+    min-width: 80px;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+  }
+  
+  .time-toggle-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+  
+  .list-form button[type="submit"] {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    min-width: 32px;
+    height: 32px;
   }
   
   .modal-time-controls {

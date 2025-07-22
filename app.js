@@ -865,6 +865,39 @@ document.getElementById('addListForm').addEventListener('submit', addList);
 document.getElementById('editListForm').addEventListener('submit', saveEditedList);
 document.getElementById('editTaskForm').addEventListener('submit', saveEditedTask);
 
+// Event delegation for dynamically created list action buttons
+document.addEventListener('click', function(event) {
+  const target = event.target.closest('button');
+  if (!target) return;
+  
+  // Handle list collapse button
+  if (target.classList.contains('list-collapse')) {
+    const listCard = target.closest('.list-card');
+    if (listCard) {
+      const listId = listCard.getAttribute('data-list-id');
+      toggleListCollapse(listId);
+    }
+  }
+  
+  // Handle list edit button
+  else if (target.classList.contains('list-edit')) {
+    const listCard = target.closest('.list-card');
+    if (listCard) {
+      const listId = listCard.getAttribute('data-list-id');
+      editList(listId);
+    }
+  }
+  
+  // Handle list delete button
+  else if (target.classList.contains('list-delete')) {
+    const listCard = target.closest('.list-card');
+    if (listCard) {
+      const listId = listCard.getAttribute('data-list-id');
+      deleteList(listId);
+    }
+  }
+});
+
 // Close modals when clicking outside
 window.onclick = function(event) {
   const addModal = document.getElementById('addListModal');
