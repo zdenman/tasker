@@ -89,13 +89,13 @@ function handleFileImport(event) {
           saveLists();
           renderLists();
           closeSettingsModal();
-          alert('Data imported successfully!');
+          showToast('Data imported successfully!', 'success');
         }
       } else {
-        alert('Invalid file format. Please select a valid backup file.');
+        showToast('Invalid file format. Please select a valid backup file.', 'error');
       }
     } catch (error) {
-      alert('Error reading file. Please make sure it\'s a valid JSON file.');
+      showToast('Error reading file. Please make sure it\'s a valid JSON file.', 'error');
     }
   };
   
@@ -482,8 +482,7 @@ function renderTasks(list) {
                onclick="editTask('${list.id}', '${task.id}')">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
           </svg>
-          <svg class="icon bell" title="Set Reminder" viewBox="0 0 24 24" fill="currentColor"
-               onclick="setReminder('${list.id}', '${task.id}')">
+          <svg class="icon bell" title="Set Reminder" viewBox="0 0 24 24" fill="currentColor" onclick="setReminder('${list.id}', '${task.id}')">
             <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
           </svg>
           <svg class="icon trash" title="Delete Task" viewBox="0 0 24 24" fill="currentColor"
@@ -616,14 +615,23 @@ function saveEditedTask(event) {
 
 // Delete task
 function deleteTask(listId, taskId) {
-  if (confirm('Are you sure you want to delete this task?')) {
-    const list = lists.find(l => l.id === listId);
-    if (list) {
+  const list = lists.find(l => l.id === listId);
+  if (!list) return;
+  
+  const task = list.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  
+  // Create confirmation toast with action buttons
+  showConfirmationToast(
+    `Delete task "${task.text}"?`,
+    () => {
       list.tasks = list.tasks.filter(t => t.id !== taskId);
       saveLists();
       renderLists();
-    }
-  }
+      showToast('Task deleted successfully', 'success');
+    },
+    () => {}
+  );
 }
 
 // Toggle list collapse
@@ -668,17 +676,20 @@ function editList(listId) {
 
 // Delete list
 function deleteList(listId) {
-  console.log('deleteList called with listId:', listId);
-  console.log('Current lists:', lists);
-  if (confirm('Are you sure you want to delete this entire list?')) {
-    console.log('User confirmed deletion');
-    lists = lists.filter(l => l.id !== listId);
-    console.log('Lists after deletion:', lists);
-    saveLists();
-    renderLists();
-  } else {
-    console.log('User cancelled deletion');
-  }
+  const list = lists.find(l => l.id === listId);
+  if (!list) return;
+  
+  // Create confirmation toast with action buttons
+  showConfirmationToast(
+    `Delete entire list "${list.name}" and all its tasks?`,
+    () => {
+      lists = lists.filter(l => l.id !== listId);
+      saveLists();
+      renderLists();
+      showToast('List deleted successfully', 'success');
+    },
+    () => {}
+  );
 }
 
 // Reorder lists
@@ -770,12 +781,12 @@ function setReminder(listId, taskId) {
   
   const task = list.tasks.find(t => t.id === taskId);
   if (!task || !task.time || !task.date) {
-    alert('Please set both time and date for this task first.');
+    showToast('Please set both time and date for this task first.', 'warning');
     return;
   }
   
   if (!('Notification' in window)) {
-    alert('Notifications are not supported in your browser.');
+    showToast('Notifications are not supported in your browser.', 'error');
     return;
   }
   
@@ -784,7 +795,7 @@ function setReminder(listId, taskId) {
   const timeUntilReminder = taskDate - now;
   
   if (timeUntilReminder <= 0) {
-    alert('This task is already past due!');
+    showToast('This task is already past due!', 'warning');
     return;
   }
   
@@ -798,7 +809,7 @@ function setReminder(listId, taskId) {
 }
 
 function setupReminder(task, permission, timeUntilReminder) {
-  alert(`Reminder set for "${task.text}" at ${task.date} ${task.time}`);
+  showToast(`Reminder set for "${task.text}" at ${task.date} ${task.time}`, 'success');
   
   setTimeout(() => {
     if (permission === 'granted') {
@@ -806,7 +817,7 @@ function setupReminder(task, permission, timeUntilReminder) {
         body: task.text
       });
     } else {
-      alert(`Reminder: ${task.text}`);
+      showToast(`Reminder: ${task.text}`, 'info', 6000);
     }
   }, timeUntilReminder);
 }
@@ -876,6 +887,99 @@ function toggleTheme() {
   
   document.documentElement.setAttribute('data-theme', newTheme);
   localStorage.setItem('theme', newTheme);
+}
+
+// Toast notification system
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+    error: '<path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+    warning: '<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>',
+    info: '<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-content">
+      <svg class="toast-icon ${type}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ${icons[type]}
+      </svg>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="removeToast(this.parentElement)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  // Auto remove
+  setTimeout(() => removeToast(toast), duration);
+  
+  return toast;
+}
+
+function removeToast(toast) {
+  if (!toast || !toast.parentElement) return;
+  
+  toast.classList.remove('show');
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.parentElement.removeChild(toast);
+    }
+  }, 300);
+}
+
+function showConfirmationToast(message, onConfirm, onCancel) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast warning confirmation';
+  
+  toast.innerHTML = `
+    <div class="toast-content">
+      <svg class="toast-icon warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+      <div class="toast-message">${message}</div>
+    </div>
+    <div class="toast-actions">
+      <button class="toast-btn cancel" onclick="handleConfirmationAction(this, false)">Cancel</button>
+      <button class="toast-btn confirm" onclick="handleConfirmationAction(this, true)">Delete</button>
+    </div>
+  `;
+  
+  // Store callbacks on the toast element
+  toast._onConfirm = onConfirm;
+  toast._onCancel = onCancel;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  return toast;
+}
+
+function handleConfirmationAction(button, isConfirm) {
+  const toast = button.closest('.toast');
+  if (!toast) return;
+  
+  if (isConfirm && toast._onConfirm) {
+    toast._onConfirm();
+  } else if (!isConfirm && toast._onCancel) {
+    toast._onCancel();
+  }
+  
+  removeToast(toast);
 }
 
 // Initialize
