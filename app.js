@@ -278,16 +278,29 @@ function renderLists() {
               <path d="${list.collapsed ? 'M7 14l5-5 5 5z' : 'M7 10l5 5 5-5z'}"/>
             </svg>
           </button>
-          <button class="icon-btn list-edit" title="Edit List">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-            </svg>
-          </button>
-          <button class="icon-btn list-delete" title="Delete List">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-            </svg>
-          </button>
+          <div class="list-menu-container">
+            <button class="icon-btn list-menu" title="More options">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="1"/>
+                <circle cx="12" cy="5" r="1"/>
+                <circle cx="12" cy="19" r="1"/>
+              </svg>
+            </button>
+            <div class="list-menu-dropdown">
+              <button class="menu-item list-edit" title="Edit List">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                Edit
+              </button>
+              <button class="menu-item list-delete" title="Delete List">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="list-content">
@@ -311,23 +324,7 @@ function renderLists() {
       </div>
     `;
     
-    const collapseBtn = listCard.querySelector('.list-collapse');
-    const editBtn = listCard.querySelector('.list-edit');
-    const deleteBtn = listCard.querySelector('.list-delete');
-    
-    console.log('Button elements found:', {
-      collapseBtn: !!collapseBtn,
-      editBtn: !!editBtn,
-      deleteBtn: !!deleteBtn,
-      listId: list.id
-    });
-    
-    collapseBtn.onclick = () => toggleListCollapse(list.id);
-    editBtn.onclick = () => editList(list.id);
-    deleteBtn.onclick = () => {
-      console.log('Delete button clicked for list:', list.id);
-      deleteList(list.id);
-    };
+    // Event handlers are now managed by event delegation
     
     // Add drag event handlers for list reordering
     listCard.addEventListener('dragstart', (e) => {
@@ -868,14 +865,39 @@ document.getElementById('editTaskForm').addEventListener('submit', saveEditedTas
 // Event delegation for dynamically created list action buttons
 document.addEventListener('click', function(event) {
   const target = event.target.closest('button');
+  console.log('Click event detected:', {
+    target: target,
+    classList: target ? Array.from(target.classList) : null,
+    eventTarget: event.target
+  });
+  
   if (!target) return;
   
   // Handle list collapse button
   if (target.classList.contains('list-collapse')) {
+    console.log('List collapse button clicked');
     const listCard = target.closest('.list-card');
     if (listCard) {
       const listId = listCard.getAttribute('data-list-id');
+      console.log('Toggling list collapse for:', listId);
       toggleListCollapse(listId);
+    }
+  }
+  
+  // Handle list menu toggle button
+  else if (target.classList.contains('list-menu')) {
+    event.stopPropagation();
+    const menuContainer = target.closest('.list-menu-container');
+    const isActive = menuContainer.classList.contains('active');
+    
+    // Close all other open menus
+    document.querySelectorAll('.list-menu-container.active').forEach(container => {
+      container.classList.remove('active');
+    });
+    
+    // Toggle current menu
+    if (!isActive) {
+      menuContainer.classList.add('active');
     }
   }
   
@@ -885,6 +907,11 @@ document.addEventListener('click', function(event) {
     if (listCard) {
       const listId = listCard.getAttribute('data-list-id');
       editList(listId);
+      // Close the menu
+      const menuContainer = target.closest('.list-menu-container');
+      if (menuContainer) {
+        menuContainer.classList.remove('active');
+      }
     }
   }
   
@@ -894,7 +921,21 @@ document.addEventListener('click', function(event) {
     if (listCard) {
       const listId = listCard.getAttribute('data-list-id');
       deleteList(listId);
+      // Close the menu
+      const menuContainer = target.closest('.list-menu-container');
+      if (menuContainer) {
+        menuContainer.classList.remove('active');
+      }
     }
+  }
+});
+
+// Close dropdown menus when clicking outside
+document.addEventListener('click', function(event) {
+  if (!event.target.closest('.list-menu-container')) {
+    document.querySelectorAll('.list-menu-container.active').forEach(container => {
+      container.classList.remove('active');
+    });
   }
 });
 
