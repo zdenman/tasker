@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Tasker</title>
+  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+</head>
+<body>
+  <header>
+    <h1>Tasker</h1>
+    <div class="header-controls">
+      <button class="view-toggle-btn" onclick="toggleView()" id="viewToggleBtn" title="Switch to column view">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </button>
+      <button class="add-list-btn" onclick="showAddListModal()">+ New List</button>
+    </div>
+  </header>
+
+  <div id="listsContainer" class="lists-container">
+    <!-- Lists will be dynamically generated here -->
+  </div>
+
+  <!-- Add List Modal -->
+  <div id="addListModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAddListModal()">&times;</span>
+      <h2>Create New List</h2>
+      <form id="addListForm">
+        <input type="text" id="newListName" placeholder="List name..." required/>
+        <input type="date" id="newListDate"/>
+        <textarea id="newListDescription" placeholder="List description (optional)..." rows="3"></textarea>
+        <button type="submit">Create List</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit List Modal -->
+  <div id="editListModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeEditListModal()">&times;</span>
+      <h2>Edit List</h2>
+      <form id="editListForm">
+        <input type="text" id="editListName" placeholder="List name..." required/>
+        <input type="date" id="editListDate"/>
+        <textarea id="editListDescription" placeholder="List description (optional)..." rows="3"></textarea>
+        <button type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div id="editTaskModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeEditTaskModal()">&times;</span>
+      <h2>Edit Task</h2>
+      <form id="editTaskForm">
+        <input type="text" id="editTaskText" placeholder="Task text..." required/>
+        <div class="modal-time-controls">
+          <button type="button" class="time-toggle-btn" onclick="toggleModalTimeInputs()" title="Add time & date">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </button>
+          <div class="modal-time-inputs" style="display: none;">
+            <input type="time" id="editTaskTime"/>
+            <input type="date" id="editTaskDate"/>
+          </div>
+        </div>
+        <button type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

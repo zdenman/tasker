@@ -1,0 +1,22 @@
+{
+  "name": "advanced-daily-planner",
+  "version": "1.0.0",
+  "description": "An advanced daily planner with multiple lists, modals, and live countdown timers",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000 -o",
+    "start": "npx http-server -p 3000",
+    "build": "echo 'No build process needed for static files'"
+  },
+  "keywords": [
+    "planner",
+    "todo",
+    "tasks",
+    "productivity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

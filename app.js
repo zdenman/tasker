@@ -1,0 +1,811 @@
+// Advanced Daily Planner with Multiple Lists, Modals, and Live Countdown
+let lists = JSON.parse(localStorage.getItem('plannerLists') || '[]');
+let currentEditingTask = null;
+let currentEditingList = null;
+let countdownIntervals = new Map();
+let isColumnView = JSON.parse(localStorage.getItem('isColumnView')) || false;
+
+// Toggle time inputs visibility
+function toggleTimeInputs(button) {
+  const form = button.closest('.list-form');
+  const timeInputs = form.querySelector('.time-date-inputs');
+  const isVisible = timeInputs.style.display !== 'none';
+  
+  if (isVisible) {
+    timeInputs.style.display = 'none';
+    button.classList.remove('active');
+    button.title = 'Add time & date';
+  } else {
+    timeInputs.style.display = 'flex';
+    button.classList.add('active');
+    button.title = 'Hide time & date';
+  }
+}
+
+// Toggle modal time inputs visibility
+function toggleModalTimeInputs() {
+  const timeInputs = document.querySelector('.modal-time-inputs');
+  const toggleBtn = document.querySelector('#editTaskModal .time-toggle-btn');
+  const isVisible = timeInputs.style.display !== 'none';
+  
+  if (isVisible) {
+    timeInputs.style.display = 'none';
+    toggleBtn.classList.remove('active');
+    toggleBtn.title = 'Add time & date';
+  } else {
+    timeInputs.style.display = 'flex';
+    toggleBtn.classList.add('active');
+    toggleBtn.title = 'Hide time & date';
+  }
+}
+
+// View toggle function
+function toggleView() {
+  isColumnView = !isColumnView;
+  localStorage.setItem('isColumnView', JSON.stringify(isColumnView));
+  
+  const container = document.getElementById('listsContainer');
+  const toggleBtn = document.getElementById('viewToggleBtn');
+  
+  if (isColumnView) {
+    container.classList.add('column-view');
+    toggleBtn.title = 'Switch to row view';
+    toggleBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    `;
+  } else {
+    container.classList.remove('column-view');
+    toggleBtn.title = 'Switch to column view';
+    toggleBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/>
+        <rect x="14" y="3" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/>
+      </svg>
+    `;
+  }
+}
+
+// Modal functions
+function showAddListModal() {
+  document.getElementById('addListModal').style.display = 'block';
+  document.getElementById('newListName').focus();
+}
+
+function closeAddListModal() {
+  document.getElementById('addListModal').style.display = 'none';
+  document.getElementById('addListForm').reset();
+}
+
+function showEditListModal(list) {
+  currentEditingList = list;
+  document.getElementById('editListModal').style.display = 'block';
+  document.getElementById('editListName').value = list.name;
+  document.getElementById('editListDate').value = list.date || '';
+  document.getElementById('editListDescription').value = list.description || '';
+  document.getElementById('editListName').focus();
+}
+
+function closeEditListModal() {
+  document.getElementById('editListModal').style.display = 'none';
+  document.getElementById('editListForm').reset();
+  currentEditingList = null;
+}
+
+function showEditTaskModal(task, listId, taskId) {
+  currentEditingTask = { listId, taskId, task };
+  document.getElementById('editTaskModal').style.display = 'block';
+  document.getElementById('editTaskText').value = task.text;
+  document.getElementById('editTaskTime').value = task.time || '';
+  document.getElementById('editTaskDate').value = task.date || '';
+  
+  // Show time inputs if task has time or date
+  const timeInputs = document.querySelector('.modal-time-inputs');
+  const toggleBtn = document.querySelector('#editTaskModal .time-toggle-btn');
+  if (task.time || task.date) {
+    timeInputs.style.display = 'flex';
+    toggleBtn.classList.add('active');
+    toggleBtn.title = 'Hide time & date';
+  } else {
+    timeInputs.style.display = 'none';
+    toggleBtn.classList.remove('active');
+    toggleBtn.title = 'Add time & date';
+  }
+  
+  document.getElementById('editTaskText').focus();
+}
+
+function closeEditTaskModal() {
+  document.getElementById('editTaskModal').style.display = 'none';
+  document.getElementById('editTaskForm').reset();
+  currentEditingTask = null;
+}
+
+// Save to localStorage
+function saveLists() {
+  localStorage.setItem('plannerLists', JSON.stringify(lists));
+}
+
+// Create countdown timer
+function createCountdownTimer(task) {
+  if (!task.time || !task.date) return '';
+  
+  const now = new Date();
+  const taskDate = new Date(task.date + 'T' + task.time);
+  const diff = taskDate - now;
+  
+  if (diff <= 0) {
+    return '<span class="countdown-timer due">Due!</span>';
+  }
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours < 1) {
+    return `<span class="countdown-timer due">${minutes}m</span>`;
+  } else if (hours < 24) {
+    return `<span class="countdown-timer">${hours}h ${minutes}m</span>`;
+  } else {
+    const days = Math.floor(hours / 24);
+    return `<span class="countdown-timer">${days}d ${hours % 24}h</span>`;
+  }
+}
+
+// Update countdown timers
+function updateCountdowns() {
+  lists.forEach(list => {
+    list.tasks.forEach(task => {
+      if (task.time && task.date) {
+        const timerId = `${list.id}-${task.id}`;
+        const element = document.getElementById(`countdown-${timerId}`);
+        if (element) {
+          element.innerHTML = createCountdownTimer(task);
+        }
+      }
+    });
+  });
+}
+
+// Render all lists
+function renderLists() {
+  const container = document.getElementById('listsContainer');
+  container.innerHTML = '';
+  
+  if (lists.length === 0) {
+    container.innerHTML = `
+      <div class="empty-list">
+        <p>No lists yet. Click "+ New List" to create your first list!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  lists.forEach(list => {
+    const listCard = document.createElement('div');
+    listCard.className = `list-card ${list.collapsed ? 'collapsed' : ''}`;
+    listCard.setAttribute('data-list-id', list.id);
+    listCard.setAttribute('draggable', 'true');
+    console.log(`Rendering list ${list.id} with classes: ${listCard.className}`);
+    
+    // Apply initial collapsed state
+    if (list.collapsed) {
+      setTimeout(() => {
+        const listContent = listCard.querySelector('.list-content');
+        if (listContent) {
+          listContent.style.display = 'none';
+        }
+      }, 0);
+    }
+    listCard.innerHTML = `
+      <div class="list-header">
+        <div>
+          <h3 class="list-title">${list.name}</h3>
+          <div class="list-date">${list.date || 'No date'}</div>
+          ${list.description ? `<div class="list-description">${list.description}</div>` : ''}
+        </div>
+        <div class="list-actions">
+          <button class="icon-btn list-collapse" title="${list.collapsed ? 'Expand' : 'Collapse'} List">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="${list.collapsed ? 'M7 14l5-5 5 5z' : 'M7 10l5 5 5-5z'}"/>
+            </svg>
+          </button>
+          <button class="icon-btn list-edit" title="Edit List">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+          </button>
+          <button class="icon-btn list-delete" title="Delete List">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="list-content">
+        <form class="list-form" onsubmit="addTask(event, '${list.id}')">
+          <input type="text" placeholder="Add task..." required>
+          <div class="time-date-inputs" style="display: none;">
+            <input type="time" placeholder="Time">
+            <input type="date" placeholder="Date">
+          </div>
+          <button type="button" class="time-toggle-btn" onclick="toggleTimeInputs(this)" title="Add time & date">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+          </button>
+          <button type="submit">+</button>
+        </form>
+        <ul class="list-tasks">
+          ${renderTasks(list)}
+        </ul>
+      </div>
+    `;
+    
+    const collapseBtn = listCard.querySelector('.list-collapse');
+    const editBtn = listCard.querySelector('.list-edit');
+    const deleteBtn = listCard.querySelector('.list-delete');
+    
+    console.log('Button elements found:', {
+      collapseBtn: !!collapseBtn,
+      editBtn: !!editBtn,
+      deleteBtn: !!deleteBtn,
+      listId: list.id
+    });
+    
+    collapseBtn.onclick = () => toggleListCollapse(list.id);
+    editBtn.onclick = () => editList(list.id);
+    deleteBtn.onclick = () => {
+      console.log('Delete button clicked for list:', list.id);
+      deleteList(list.id);
+    };
+    
+    // Add drag event handlers for list reordering
+    listCard.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', list.id);
+      e.dataTransfer.setData('application/x-list-id', list.id);
+      listCard.classList.add('dragging');
+    });
+    
+    listCard.addEventListener('dragend', (e) => {
+      listCard.classList.remove('dragging');
+    });
+    
+    listCard.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const draggingList = document.querySelector('.list-card.dragging');
+      if (draggingList && draggingList !== listCard) {
+        const rect = listCard.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY < midY) {
+          listCard.classList.add('drag-over-top');
+          listCard.classList.remove('drag-over-bottom');
+        } else {
+          listCard.classList.add('drag-over-bottom');
+          listCard.classList.remove('drag-over-top');
+        }
+      }
+    });
+    
+    listCard.addEventListener('dragleave', (e) => {
+      listCard.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    
+    listCard.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const draggedListId = e.dataTransfer.getData('application/x-list-id');
+      if (draggedListId && draggedListId !== list.id) {
+        reorderLists(draggedListId, list.id, listCard.classList.contains('drag-over-bottom'));
+      }
+      listCard.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    
+    container.appendChild(listCard);
+    
+    // Add task drag event handlers
+    const taskItems = listCard.querySelectorAll('.list-task-item');
+    taskItems.forEach(taskItem => {
+      taskItem.addEventListener('dragstart', (e) => {
+        const taskId = taskItem.getAttribute('data-task-id');
+        const listId = taskItem.getAttribute('data-list-id');
+        e.dataTransfer.setData('text/plain', `${listId}:${taskId}`);
+        e.dataTransfer.setData('application/x-task-data', JSON.stringify({taskId, listId}));
+        taskItem.classList.add('dragging');
+        e.stopPropagation();
+      });
+      
+      taskItem.addEventListener('dragend', (e) => {
+        taskItem.classList.remove('dragging');
+      });
+      
+      taskItem.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const draggingTask = document.querySelector('.list-task-item.dragging');
+        if (draggingTask && draggingTask !== taskItem) {
+          const rect = taskItem.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (e.clientY < midY) {
+            taskItem.classList.add('drag-over-top');
+            taskItem.classList.remove('drag-over-bottom');
+          } else {
+            taskItem.classList.add('drag-over-bottom');
+            taskItem.classList.remove('drag-over-top');
+          }
+        }
+      });
+      
+      taskItem.addEventListener('dragleave', (e) => {
+        taskItem.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      
+      taskItem.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskData = e.dataTransfer.getData('application/x-task-data');
+        if (taskData) {
+          const {taskId: draggedTaskId, listId: draggedListId} = JSON.parse(taskData);
+          const targetTaskId = taskItem.getAttribute('data-task-id');
+          const targetListId = taskItem.getAttribute('data-list-id');
+          if (draggedTaskId !== targetTaskId) {
+            reorderTasks(draggedListId, draggedTaskId, targetTaskId, targetListId, taskItem.classList.contains('drag-over-bottom'));
+          }
+        }
+        taskItem.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+    });
+    
+    // Add drag event handlers for empty lists
+    const emptyList = listCard.querySelector('.empty-list');
+    if (emptyList) {
+      emptyList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const draggingTask = document.querySelector('.list-task-item.dragging');
+        if (draggingTask) {
+          emptyList.classList.add('drag-over');
+        }
+      });
+      
+      emptyList.addEventListener('dragleave', (e) => {
+        emptyList.classList.remove('drag-over');
+      });
+      
+      emptyList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskData = e.dataTransfer.getData('application/x-task-data');
+        if (taskData) {
+          const {taskId: draggedTaskId, listId: draggedListId} = JSON.parse(taskData);
+          const targetListId = emptyList.getAttribute('data-list-id');
+          if (draggedListId !== targetListId) {
+            moveTaskToEmptyList(draggedListId, draggedTaskId, targetListId);
+          }
+        }
+        emptyList.classList.remove('drag-over');
+      });
+    }
+  });
+  
+  startCountdownUpdates();
+}
+
+// Render tasks for a list
+function renderTasks(list) {
+  if (list.tasks.length === 0) {
+    return `<div class="empty-list" data-list-id="${list.id}">No tasks yet. Add your first task!</div>`;
+  }
+  
+  return list.tasks.map(task => {
+    const timerId = `${list.id}-${task.id}`;
+    const countdown = createCountdownTimer(task);
+    
+    return `
+      <li class="list-task-item ${task.done ? 'done' : ''}" draggable="true" data-task-id="${task.id}" data-list-id="${list.id}">
+        <input type="checkbox" ${task.done ? 'checked' : ''} 
+               onchange="toggleTask('${list.id}', '${task.id}')">
+        <span class="task-text">${task.text}</span>
+        ${task.time ? `<span class="task-time">${task.time}</span>` : ''}
+        ${task.date ? `<span class="task-time">${task.date}</span>` : ''}
+        ${countdown ? `<span id="countdown-${timerId}" class="countdown-timer">${countdown}</span>` : ''}
+        <div class="task-actions">
+          <svg class="icon edit" title="Edit Task" viewBox="0 0 24 24" fill="currentColor"
+               onclick="editTask('${list.id}', '${task.id}')">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+          <svg class="icon bell" title="Set Reminder" viewBox="0 0 24 24" fill="currentColor"
+               onclick="setReminder('${list.id}', '${task.id}')">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+          <svg class="icon trash" title="Delete Task" viewBox="0 0 24 24" fill="currentColor"
+               onclick="deleteTask('${list.id}', '${task.id}')">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
+        </div>
+      </li>
+    `;
+  }).join('');
+}
+
+// Add new list
+function addList(event) {
+  event.preventDefault();
+  const name = event.target.elements[0].value.trim();
+  const date = event.target.elements[1].value;
+  const description = event.target.elements[2].value.trim();
+  
+  if (name) {
+    const newList = {
+      id: Date.now().toString(),
+      name: name,
+      date: date,
+      description: description,
+      collapsed: false,
+      tasks: []
+    };
+    lists.push(newList);
+    saveLists();
+    renderLists();
+    closeAddListModal();
+  }
+}
+
+// Save edited list
+function saveEditedList(event) {
+  event.preventDefault();
+  if (!currentEditingList) return;
+  
+  const name = document.getElementById('editListName').value.trim();
+  const date = document.getElementById('editListDate').value;
+  const description = document.getElementById('editListDescription').value.trim();
+  
+  if (name) {
+    currentEditingList.name = name;
+    currentEditingList.date = date;
+    currentEditingList.description = description;
+    saveLists();
+    renderLists();
+    closeEditListModal();
+  }
+}
+
+// Add task to list
+function addTask(event, listId) {
+  event.preventDefault();
+  const form = event.target;
+  const text = form.elements[0].value.trim();
+  const time = form.elements[1].value;
+  const date = form.elements[2].value;
+  
+  if (text) {
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+      const newTask = {
+        id: Date.now().toString(),
+        text: text,
+        time: time,
+        date: date,
+        done: false
+      };
+      list.tasks.push(newTask);
+      saveLists();
+      renderLists();
+      form.reset();
+    }
+  }
+}
+
+// Toggle task completion
+function toggleTask(listId, taskId) {
+  const list = lists.find(l => l.id === listId);
+  if (list) {
+    const task = list.tasks.find(t => t.id === taskId);
+    if (task) {
+      task.done = !task.done;
+      saveLists();
+      renderLists();
+    }
+  }
+}
+
+// Edit task
+function editTask(listId, taskId) {
+  const list = lists.find(l => l.id === listId);
+  if (list) {
+    const task = list.tasks.find(t => t.id === taskId);
+    if (task) {
+      showEditTaskModal(task, listId, taskId);
+    }
+  }
+}
+
+// Save edited task
+function saveEditedTask(event) {
+  event.preventDefault();
+  if (!currentEditingTask) return;
+  
+  const { listId, taskId } = currentEditingTask;
+  const text = document.getElementById('editTaskText').value.trim();
+  const time = document.getElementById('editTaskTime').value;
+  const date = document.getElementById('editTaskDate').value;
+  
+  if (text) {
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+      const task = list.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.text = text;
+        task.time = time;
+        task.date = date;
+        saveLists();
+        renderLists();
+        closeEditTaskModal();
+      }
+    }
+  }
+}
+
+// Delete task
+function deleteTask(listId, taskId) {
+  if (confirm('Are you sure you want to delete this task?')) {
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+      list.tasks = list.tasks.filter(t => t.id !== taskId);
+      saveLists();
+      renderLists();
+    }
+  }
+}
+
+// Toggle list collapse
+function toggleListCollapse(listId) {
+  const list = lists.find(l => l.id === listId);
+  if (list) {
+    list.collapsed = !list.collapsed;
+    console.log(`List ${listId} collapsed state: ${list.collapsed}`);
+    
+    // Directly manipulate DOM for immediate effect
+    const listCard = document.querySelector(`[data-list-id="${listId}"]`);
+    if (listCard) {
+      const listContent = listCard.querySelector('.list-content');
+      if (listContent) {
+        listContent.style.display = list.collapsed ? 'none' : 'block';
+      }
+      
+      // Update collapse icon
+      const collapseIcon = listCard.querySelector('.list-collapse svg path');
+      if (collapseIcon) {
+        collapseIcon.setAttribute('d', list.collapsed ? 'M7 14l5-5 5 5z' : 'M7 10l5 5 5-5z');
+      }
+      
+      // Update title
+      const collapseBtn = listCard.querySelector('.list-collapse');
+      if (collapseBtn) {
+        collapseBtn.setAttribute('title', list.collapsed ? 'Expand List' : 'Collapse List');
+      }
+    }
+    
+    saveLists();
+  }
+}
+
+// Edit list
+function editList(listId) {
+  const list = lists.find(l => l.id === listId);
+  if (list) {
+    showEditListModal(list);
+  }
+}
+
+// Delete list
+function deleteList(listId) {
+  console.log('deleteList called with listId:', listId);
+  console.log('Current lists:', lists);
+  if (confirm('Are you sure you want to delete this entire list?')) {
+    console.log('User confirmed deletion');
+    lists = lists.filter(l => l.id !== listId);
+    console.log('Lists after deletion:', lists);
+    saveLists();
+    renderLists();
+  } else {
+    console.log('User cancelled deletion');
+  }
+}
+
+// Reorder lists
+function reorderLists(draggedListId, targetListId, insertAfter) {
+  const draggedIndex = lists.findIndex(l => l.id === draggedListId);
+  const targetIndex = lists.findIndex(l => l.id === targetListId);
+  
+  if (draggedIndex === -1 || targetIndex === -1) return;
+  
+  const draggedList = lists[draggedIndex];
+  lists.splice(draggedIndex, 1);
+  
+  const newTargetIndex = lists.findIndex(l => l.id === targetListId);
+  const insertIndex = insertAfter ? newTargetIndex + 1 : newTargetIndex;
+  
+  lists.splice(insertIndex, 0, draggedList);
+  saveLists();
+  renderLists();
+}
+
+// Reorder tasks
+function reorderTasks(draggedListId, draggedTaskId, targetTaskId, targetListId, insertAfter) {
+  const draggedList = lists.find(l => l.id === draggedListId);
+  const targetList = lists.find(l => l.id === targetListId);
+  
+  if (!draggedList || !targetList) return;
+  
+  const draggedTaskIndex = draggedList.tasks.findIndex(t => t.id === draggedTaskId);
+  if (draggedTaskIndex === -1) return;
+  
+  const draggedTask = draggedList.tasks[draggedTaskIndex];
+  
+  // Remove task from source list
+  draggedList.tasks.splice(draggedTaskIndex, 1);
+  
+  // Find target position
+  if (draggedListId === targetListId) {
+    // Reordering within same list
+    const targetTaskIndex = targetList.tasks.findIndex(t => t.id === targetTaskId);
+    if (targetTaskIndex !== -1) {
+      const insertIndex = insertAfter ? targetTaskIndex + 1 : targetTaskIndex;
+      targetList.tasks.splice(insertIndex, 0, draggedTask);
+    } else {
+      // If target task not found, add back to original position or end
+      targetList.tasks.push(draggedTask);
+    }
+  } else {
+    // Moving between different lists
+    const targetTaskIndex = targetList.tasks.findIndex(t => t.id === targetTaskId);
+    if (targetTaskIndex !== -1) {
+      const insertIndex = insertAfter ? targetTaskIndex + 1 : targetTaskIndex;
+      targetList.tasks.splice(insertIndex, 0, draggedTask);
+    } else {
+      // If target task not found, add to end
+      targetList.tasks.push(draggedTask);
+    }
+  }
+  
+  saveLists();
+  renderLists();
+}
+
+// Move task to empty list
+function moveTaskToEmptyList(draggedListId, draggedTaskId, targetListId) {
+  const draggedList = lists.find(l => l.id === draggedListId);
+  const targetList = lists.find(l => l.id === targetListId);
+  
+  if (!draggedList || !targetList) return;
+  
+  const draggedTaskIndex = draggedList.tasks.findIndex(t => t.id === draggedTaskId);
+  if (draggedTaskIndex === -1) return;
+  
+  const draggedTask = draggedList.tasks[draggedTaskIndex];
+  
+  // Remove task from source list
+  draggedList.tasks.splice(draggedTaskIndex, 1);
+  
+  // Add task to target list
+  targetList.tasks.push(draggedTask);
+  
+  saveLists();
+  renderLists();
+}
+
+// Set reminder
+function setReminder(listId, taskId) {
+  const list = lists.find(l => l.id === listId);
+  if (!list) return;
+  
+  const task = list.tasks.find(t => t.id === taskId);
+  if (!task || !task.time || !task.date) {
+    alert('Please set both time and date for this task first.');
+    return;
+  }
+  
+  if (!('Notification' in window)) {
+    alert('Notifications are not supported in your browser.');
+    return;
+  }
+  
+  const taskDate = new Date(task.date + 'T' + task.time);
+  const now = new Date();
+  const timeUntilReminder = taskDate - now;
+  
+  if (timeUntilReminder <= 0) {
+    alert('This task is already past due!');
+    return;
+  }
+  
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      setupReminder(task, permission, timeUntilReminder);
+    });
+  } else {
+    setupReminder(task, Notification.permission, timeUntilReminder);
+  }
+}
+
+function setupReminder(task, permission, timeUntilReminder) {
+  alert(`Reminder set for "${task.text}" at ${task.date} ${task.time}`);
+  
+  setTimeout(() => {
+    if (permission === 'granted') {
+      new Notification('Daily Planner Reminder', { 
+        body: task.text
+      });
+    } else {
+      alert(`Reminder: ${task.text}`);
+    }
+  }, timeUntilReminder);
+}
+
+// Start countdown updates
+function startCountdownUpdates() {
+  countdownIntervals.forEach(interval => clearInterval(interval));
+  countdownIntervals.clear();
+  
+  const interval = setInterval(updateCountdowns, 60000);
+  countdownIntervals.set('main', interval);
+}
+
+// Initialize view state
+function initializeView() {
+  const container = document.getElementById('listsContainer');
+  const toggleBtn = document.getElementById('viewToggleBtn');
+  
+  if (isColumnView) {
+    container.classList.add('column-view');
+    toggleBtn.title = 'Switch to row view';
+    toggleBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    `;
+  } else {
+    container.classList.remove('column-view');
+    toggleBtn.title = 'Switch to column view';
+    toggleBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/>
+        <rect x="14" y="3" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/>
+      </svg>
+    `;
+  }
+}
+
+// Event listeners
+document.getElementById('addListForm').addEventListener('submit', addList);
+document.getElementById('editListForm').addEventListener('submit', saveEditedList);
+document.getElementById('editTaskForm').addEventListener('submit', saveEditedTask);
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+  const addModal = document.getElementById('addListModal');
+  const editListModal = document.getElementById('editListModal');
+  const editTaskModal = document.getElementById('editTaskModal');
+  if (event.target === addModal) closeAddListModal();
+  if (event.target === editListModal) closeEditListModal();
+  if (event.target === editTaskModal) closeEditTaskModal();
+};
+
+// Initialize
+initializeView();
+renderLists();
+startCountdownUpdates();
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
